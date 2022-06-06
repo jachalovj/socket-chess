@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>socket</title>
+    <link rel="stylesheet" href="./index.css">
+    <script src="/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-title">房间列表（点击可加入房间）</div>
+            <div class="room" id="room">
+                <div class="room-item">12</div>
+            </div>
+            <div class="panel-title">观战列表（点击可进行观战）</div>
+            <div class="room" id="watchRoom">
+                <div class="room-item">12</div>
+            </div>
+            <div class="room-create" id="create">创建房间</div>
+            <div class="room-create" id="AIplay">
+              人机对战
+            </div>
+        </div>
+    </div>
+    <script src="./index.js"></script>
+</body>
+</html>

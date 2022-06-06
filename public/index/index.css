@@ -1,0 +1,21 @@
+body {
+    background: url('./image/woodfloor.jpg');
+}
+
+h1 {
+    text-align: center;
+}
+
+.tip {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto;
+    border-radius: 50%;
+}
+
+canvas {
+    display: block;
+    margin: 50px auto;
+    background: url(./image/wood.jpg);
+    box-shadow: -2px -2px 2px #b9b9b9, 5px 5px 5px #000;
+}

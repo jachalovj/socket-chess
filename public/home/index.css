@@ -1,0 +1,47 @@
+html, body {
+    height: 100%;
+}
+
+.container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel {
+    width: 50%;
+    height: 50%;
+    padding: 20px;
+    box-sizing: border-box;
+    border: 1px dashed #ccc;
+}
+
+.panel-title {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.room-item {
+    padding: 10px;
+    margin: 10px;
+    cursor: pointer;
+    display: inline-flex;
+    border: 1px solid #4094ff;
+}
+
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.room-create {
+    width: 200px;
+    padding: 10px;
+    text-align: center;
+    margin: 10px auto;
+    cursor: pointer;
+    border: 1px dashed #409eff;
+}
