@@ -20,6 +20,7 @@ app.get('/home', (req, res) => {
 let rooms = [];
 io.on('connection', socket => {
     console.log('有客户端连接了');
+
     // 返回房间列表
     socket.on('getRooms', () => {
         socket.emit('getRooms', rooms);
@@ -32,10 +33,10 @@ io.on('connection', socket => {
             play: 0,
             chessColor: null,
             roomId,
-            socket: {
-                play: [],
-                watch: []
-            }
+            // socket: {
+            //     play: [],
+            //     watch: []
+            // }
         });
         socket.emit('createRoom', roomId);
         // 提醒所有客户端刷新房间列表
@@ -64,19 +65,19 @@ io.on('connection', socket => {
         chessColor: null,
         aiPlay: true,
         roomId,
-        socket: {
-            play: [],
-            watch: []
-        }
-    });
+        // socket: {
+        //     play: [],
+        //     watch: []
+        // }
+      });
       socket.emit('AIplay', roomId);
     })
 
     // 下子
     socket.on('chess', (roomId, chessInfo) => {
-        console.log('chess', roomId);
         socket.broadcast.to(roomId).emit('chess', chessInfo);
     });
+
     // 进入房间
     socket.on('register', (roomId, color) => {
         socket.join(roomId);
@@ -102,6 +103,7 @@ io.on('connection', socket => {
             }
         }
     });
+
     // 是否有一方获胜
     socket.on('win', (roomId, isBlack) => {
         socket.emit('win', isBlack);

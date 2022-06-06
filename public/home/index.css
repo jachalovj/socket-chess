@@ -45,3 +45,12 @@ html, body {
     cursor: pointer;
     border: 1px dashed #409eff;
 }
+
+.room-AIplay {
+    width: 200px;
+    padding: 10px;
+    text-align: center;
+    margin: 10px auto;
+    cursor: pointer;
+    border: 1px dashed #409eff;
+}

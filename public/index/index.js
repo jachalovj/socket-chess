@@ -17,6 +17,12 @@ const chess = document.getElementById('chess');
 const context = chess.getContext('2d');
 context.strokeStyle='#000';
 
+const socket = io();
+
+const roomIdDom = document.getElementById('roomId');
+const tipDom = document.getElementById('tip');
+const messageDom = document.getElementById('message');
+
 // 获取url的query参数
 const getQueryVariable = (variable) => {
     let href = window.location.href;
@@ -31,72 +37,9 @@ const getQueryVariable = (variable) => {
     return false;
 }
 
-const message = document.getElementById('message');
-const setMessage = () => {
-    if (chessColor) {
-        message.innerHTML = `你执黑子先行`
-    } else {
-        message.innerHTML = `你执白子后行`;
-    }
-}
-
-const socket = io();
-
-// 获取当前观战的棋盘信息
-socket.on('watch', cboard => {
-    chessBoard = cboard;
-    chessBack();
-});
-
-// 监听获取棋盘
-socket.on('getChessBoard', () => {
-    socket.emit('getChessBoard', chessBoard);
-});
-
-// 获取roomId
-const roomId = getQueryVariable('roomId');
-watch = getQueryVariable('watch');
-AIEnabled = getQueryVariable('AIEnabled')
-
-if (roomId) {
-    console.log(roomId);
-    if (watch) {
-        socket.emit('watch', roomId);
-    } else {
-        // 注册当前用户
-        socket.emit('register', roomId, chessColor);
-        setMessage();
-        // 初始化棋盘信息
-        initChessBoard();
-    }
-}
-
-const roomIdDom = document.getElementById('roomId');
-socket.on('success', roomId => {
-    roomIdDom.innerHTML = `房间号：${roomId}, 等待中....`;
-});
-
-socket.on('win', isBlack => {
-    win = true;
-    alert(isBlack ? '黑棋赢了' : '白棋赢了');
-});
-
-socket.on('ready', () => {
-    waiting = false;
-    roomIdDom.innerHTML = roomIdDom.innerHTML.replace('等待中....', '已就绪');
-});
-
-const tipDom = document.getElementById('tip');
-socket.on('chess', chessInfo => {
-    console.log('chess');
-    drawChess(chessInfo.i, chessInfo.j, chessInfo.me);
-});
-
-socket.on('used', () => {
-    chessColor = !chessColor;
-    setMessage();
-});
-
+/**
+ * 棋盘和棋子
+ */
 // 画棋盘
 function drawChessBoard() {
     for (let i = 0; i < 15; i++) {
@@ -111,8 +54,6 @@ function drawChessBoard() {
         context.stroke();
     }
 }
-drawChessBoard();
-
 // 棋盘回溯
 function chessBack() {
     // 清空画布
@@ -122,7 +63,6 @@ function chessBack() {
         }
     }
 }
-
 // 画棋子
 function drawChess(i, j, isBlack) {
     // 代表黑棋
@@ -147,11 +87,10 @@ function drawChess(i, j, isBlack) {
     context.fill();
 
     // 提示
-    tipDom.style.backgroundImage = me ? "radial-gradient(#f9f9f9, #d1d1d1)" : "radial-gradient(#636766, #0a0a0a)";
+    tipDom.style.backgroundImage = isBlack ? "radial-gradient(#f9f9f9, #d1d1d1)" : "radial-gradient(#636766, #0a0a0a)";
     // 改变棋子颜色
     me = !me;
 }
-
 // 初始化棋盘落子
 function initChessBoard() {
     for (let i = 0; i < 15; i++) {
@@ -162,6 +101,45 @@ function initChessBoard() {
         }
     }
 }
+
+// 设置先后手消息
+const setMessage = () => {
+  messageDom.innerHTML = chessColor ? `你执黑子先行` : `你执白子后行`
+}
+
+/**
+ * 获取棋盘棋子
+ */
+ const initGame = () => {
+  // 获取roomId
+  const roomId = getQueryVariable('roomId');
+  // watch = getQueryVariable('watch');
+  AIEnabled = getQueryVariable('AIEnabled')
+  // 画棋盘
+  drawChessBoard();
+  if (!roomId) {
+    return console.log('未进入房间');
+  }
+  if (watch) {
+      // socket.emit('watch', roomId);
+  } else {
+      // 注册当前用户
+      socket.emit('register', roomId, chessColor);
+      // 初始化棋盘信息
+      initChessBoard();
+      if (AIEnabled && !chessColor) {
+        me = false;
+        drawChess(7, 7, true)
+      }
+      setMessage();
+  }
+}
+initGame()
+
+
+/**
+ * AI 下棋
+ */
 
 // 赢法数组
 let wins = [];
@@ -248,27 +226,26 @@ myWins.fill(0);
 let AIWins = new Array(count);
 AIWins.fill(0);
 
-
 // 获取当前赢法的五颗棋子的坐标
 function getCoordinates(k) {
-    let res = [];
-    for (let i = 0; i < 15; i++) {
-        for (let j = 0; j < 15; j++) {
-            if (wins[i][j][k]) {
-                res.push([i, j]);
-            }
-        }
-    }
-    return res;
+  let res = [];
+  for (let i = 0; i < 15; i++) {
+      for (let j = 0; j < 15; j++) {
+          if (wins[i][j][k]) {
+              res.push([i, j]);
+          }
+      }
+  }
+  return res;
 }
 
 // 查找当前赢法中还未落子的棋子坐标
 function getEnableCoordinate(coordinates) {
-    return coordinates.find(item => {
-        let i = item[0];
-        let j = item[1];
-        return chessBoard[i][j] === 0;
-    });
+  return coordinates.find(item => {
+      let i = item[0];
+      let j = item[1];
+      return chessBoard[i][j] === 0;
+  });
 }
 
 // AI下棋, 不让你赢，有利于自己赢
@@ -283,7 +260,7 @@ function AI() {
             // 拿到可用的棋子坐标
             let xy = getEnableCoordinate(arr);
             // 落子
-            drawChess(...xy, false);
+            drawChess(...xy, !chessColor);
             // 代表白棋
             chessBoard[xy[0]][xy[1]] = 2;
             // 更新赢法统计数组
@@ -309,7 +286,7 @@ function AI() {
             // 拿到可用的棋子坐标
             let xy = getEnableCoordinate(arr);
             // 落子
-            drawChess(...xy, false);
+            drawChess(...xy, !chessColor);
             // 代表白棋
             chessBoard[xy[0]][xy[1]] = 2;
             // 更新赢法统计数组
@@ -327,70 +304,8 @@ function AI() {
         }
     }
 }
-// 落子
-chess.onclick = function (e) {
-    // 观战状态，不允许落子
-    if (watch) {
-        return;
-    }
-    // 等待状态，不允许落子
-    if (waiting) {
-        return;
-    }
-    // 输赢已定，不能再落子了
-    if (win) {
-        return;
-    }
-    // AI落子
-    if (AIEnabled && !me) {
-        return;
-    }
-    // 是否是自己的回合
-    if (chessColor !== me) {
-        return;
-    }
-    let offsetX = e.offsetX;
-    let offsetY = e.offsetY;
-    let i = Math.floor(offsetX / 30);
-    let j = Math.floor(offsetY / 30);
-    // 当前节点没有下棋
-    if (chessBoard[i][j] === 0) {
-        // 通知其他客户端更新棋盘
-        socket.emit('chess', roomId, { i, j, me});
-        // 落子
-        drawChess(i, j, me);
-        // 更新赢法统计数组
-        for (let k = 0; k < count; k++) {
-            if (!me) {
-                // 说明触发了一种赢法
-                if (wins[i][j][k]) {
-                    myWins[k]++;
-                }
-                if (myWins[k] === 5) {
-                    win = true;
-                    socket.emit('win', roomId, chessColor);
-                    break;
-                }
-            } else {
-                // 说明触发了一种赢法
-                if (wins[i][j][k]) {
-                    AIWins[k]++;
-                }
-                if (AIWins[k] === 5) {
-                    win = true;
-                    socket.emit('win', roomId, chessColor);
-                    break;
-                }
-            }
-        }
-        if (AIEnabled) {
-            // AI落子
-            computer();
-        }
-    }
-}
 
-
+// AI落子
 function computer() {
     // 统计棋盘每个点的得分
     let myScore = [], AIScore = [];
@@ -444,7 +359,7 @@ function computer() {
     }
 
     // 落子
-    drawChess(u, v, me);
+    drawChess(u, v, !chessColor);
     chessBoard[u][v] = 2;
     // 更新赢法统计数组
     for (let k = 0; k < count; k++) {
@@ -461,3 +376,108 @@ function computer() {
 }
 
 
+/**
+ * 监听事件
+ */
+// 棋盘点击落子
+chess.onclick = function (e) {
+  console.log(watch,waiting, AIEnabled,me, chessColor);
+  // 观战状态，不允许落子
+  if (watch) {
+      return;
+  }
+  // 等待状态，不允许落子
+  if (waiting) {
+      return;
+  }
+  // 输赢已定，不能再落子了
+  if (win) {
+      return;
+  }
+  // AI落子
+  if (AIEnabled && !me) {
+      return;
+  }
+  // 是否是自己的回合
+  if (!me) {
+      return;
+  }
+  let offsetX = e.offsetX;
+  let offsetY = e.offsetY;
+  let i = Math.floor(offsetX / 30);
+  let j = Math.floor(offsetY / 30);
+  // 当前节点没有下棋
+  if (chessBoard[i][j] === 0) {
+      // 通知其他客户端更新棋盘
+      socket.emit('chess', roomId, { i, j, me});
+      // 落子
+      drawChess(i, j, chessColor);
+      // 更新赢法统计数组
+      for (let k = 0; k < count; k++) {
+          if (!me) {
+              // 说明触发了一种赢法
+              if (wins[i][j][k]) {
+                  myWins[k]++;
+              }
+              if (myWins[k] === 5) {
+                  win = true;
+                  socket.emit('win', roomId, chessColor);
+                  break;
+              }
+          } else {
+              // 说明触发了一种赢法
+              if (wins[i][j][k]) {
+                  AIWins[k]++;
+              }
+              if (AIWins[k] === 5) {
+                  win = true;
+                  socket.emit('win', roomId, chessColor);
+                  break;
+              }
+          }
+      }
+      if (AIEnabled) {
+          // AI落子
+          computer();
+      }
+  }
+}
+
+// 获取当前观战的棋盘信息
+socket.on('watch', cboard => {
+  chessBoard = cboard;
+  chessBack();
+});
+
+// 监听获取棋盘
+socket.on('getChessBoard', () => {
+  socket.emit('getChessBoard', chessBoard);
+});
+
+// 监听落子
+socket.on('chess', chessInfo => {
+  drawChess(chessInfo.i, chessInfo.j, chessInfo.me);
+});
+
+// 监听颜色是否被占用
+socket.on('used', () => {
+  chessColor = !chessColor;
+  setMessage();
+});
+
+// 单人创建房间
+socket.on('success', roomId => {
+  roomIdDom.innerHTML = `房间号：${roomId}, 等待中....`;
+});
+
+// 触发获胜条件
+socket.on('win', isBlack => {
+  win = true;
+  alert(isBlack ? '黑棋赢了' : '白棋赢了');
+});
+
+// 就绪
+socket.on('ready', () => {
+  waiting = false;
+  roomIdDom.innerHTML = roomIdDom.innerHTML.replace('等待中....', '已就绪');
+});
